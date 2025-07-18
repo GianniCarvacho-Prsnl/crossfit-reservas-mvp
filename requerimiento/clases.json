@@ -1,0 +1,32 @@
+{
+  "clases_por_dia": {
+    "lunes": {
+      "clase": "CrossFit",
+      "horario": "08:00-09:00"
+    },
+    "martes": {
+      "clase": "CrossFit",
+      "horario": "08:00-09:00"
+    },
+    "miercoles": {
+      "clase": "Competitor",
+      "horario": "19:00-20:00"
+    },
+    "jueves": {
+      "clase": "METCON",
+      "horario": "19:00-21:00"
+    },
+    "viernes": {
+      "clase": "Competitor",
+      "horario": "19:00-20:00"
+    },
+    "sabado": {
+      "clase": "CrossFit",
+      "horario": "11:00-12:00"
+    },
+    "domingo": {
+      "clase": "Descanso",
+      "horario": "N/A"
+    }
+  }
+} 

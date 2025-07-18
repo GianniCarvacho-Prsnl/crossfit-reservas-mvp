@@ -1,0 +1,28 @@
+{
+  "clases": [
+    {
+      "id": "competitor-1800",
+      "nombre": "Competitor 18:00-19:00",
+      "dia_semana": "jueves",
+      "hora_inicio": "18:00",
+      "hora_reserva": "17:00",
+      "activo": true
+    },
+    {
+      "id": "crossfit-1700",
+      "nombre": "17:00 CrossFit 17:00-18:00",
+      "dia_semana": "jueves", 
+      "hora_inicio": "17:00",
+      "hora_reserva": "16:00",
+      "activo": true
+    },
+    {
+      "id": "crossfit-0800",
+      "nombre": "08:00 CrossFit 08:00-09:00",
+      "dia_semana": "jueves",
+      "hora_inicio": "08:00",
+      "hora_reserva": "07:00",
+      "activo": true
+    }
+  ]
+}
