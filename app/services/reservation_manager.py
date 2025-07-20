@@ -50,7 +50,8 @@ class ReservationManager:
                     clase_nombre=nombre_clase,
                     estado=EstadoReserva.FALLIDA,
                     fecha_ejecucion=timestamp,
-                    mensaje="Credenciales no configuradas"
+                    mensaje="Credenciales no configuradas",
+                    error_type="CREDENTIALS_ERROR"
                 )
             
             # 3. Ejecutar la automatización web directamente con el nombre y fecha
@@ -68,13 +69,20 @@ class ReservationManager:
                     mensaje=result["message"]
                 )
             else:
-                logger.error(f"💥 Fallo en la reserva: {result['message']}")
+                # Determinar el tipo de error específico
+                error_type = result.get("error_type")
+                if error_type == "NO_CUPOS":
+                    logger.warning(f"⚠️ Sin cupos disponibles para: {nombre_clase}")
+                else:
+                    logger.error(f"💥 Fallo en la reserva: {result['message']}")
+                
                 return ReservaResponse(
                     id=reservation_id,
                     clase_nombre=nombre_clase,
                     estado=EstadoReserva.FALLIDA,
                     fecha_ejecucion=timestamp,
-                    mensaje=result["message"]
+                    mensaje=result["message"],
+                    error_type=error_type
                 )
                 
         except Exception as e:
@@ -84,7 +92,8 @@ class ReservationManager:
                 clase_nombre=nombre_clase,
                 estado=EstadoReserva.FALLIDA,
                 fecha_ejecucion=timestamp,
-                mensaje=f"Error inesperado: {str(e)}"
+                mensaje=f"Error inesperado: {str(e)}",
+                error_type="UNEXPECTED_ERROR"
             )
     
     def get_available_classes(self):

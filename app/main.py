@@ -67,6 +67,16 @@ async def root():
         "docs": "/docs"
     }
 
+@app.get("/health")
+@app.head("/health")
+async def health_check():
+    """Endpoint de health check para Docker"""
+    return {
+        "status": "healthy",
+        "service": "CrossFit Reservas MVP",
+        "version": "1.0.0"
+    }
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))

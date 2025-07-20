@@ -18,6 +18,7 @@ class ReservaResponse(BaseModel):
     estado: EstadoReserva
     fecha_ejecucion: datetime
     mensaje: str
+    error_type: Optional[str] = None  # "NO_CUPOS", "LOGIN_FAILED", "NETWORK_ERROR", etc.
 
 class ClaseConfig(BaseModel):
     id: str

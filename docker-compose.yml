@@ -1,0 +1,43 @@
+services:
+  crossfit-reservas:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: crossfit-reservas-mvp
+    ports:
+      - "8001:8001"
+    environment:
+      - CROSSFIT_URL=${CROSSFIT_URL}
+      - USERNAME=${USERNAME}
+      - PASSWORD=${PASSWORD}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - PORT=8001
+      - BROWSER_HEADLESS=${BROWSER_HEADLESS:-true}
+      - PYTHONUNBUFFERED=1
+    env_file:
+      - .env
+    volumes:
+      # Solo montar para desarrollo (comentar en producción)
+      - ./app:/app/app:ro
+      - ./config:/app/config:ro
+      # Volumen para logs (opcional)
+      - logs_volume:/app/logs
+    restart: unless-stopped
+    networks:
+      - crossfit-network
+    # Límites de recursos para optimización
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+volumes:
+  logs_volume:
+
+networks:
+  crossfit-network:
+    driver: bridge
