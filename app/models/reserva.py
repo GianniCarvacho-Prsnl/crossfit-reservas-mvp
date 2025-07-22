@@ -8,9 +8,20 @@ class EstadoReserva(str, Enum):
     FALLIDA = "fallida"
     EN_PROCESO = "en_proceso"
 
+class EstadoReservaProgramada(str, Enum):
+    PROGRAMADA = "programada"
+    EJECUTANDO = "ejecutando"
+    EXITOSA = "exitosa"
+    FALLIDA = "fallida"
+
 class ReservaInmediataRequest(BaseModel):
     nombre_clase: str
     fecha: str  # Formato: "JU 17", "VI 18", etc.
+
+class ReservaProgramadaRequest(BaseModel):
+    nombre_clase: str
+    fecha: str  # Formato: "JU 17", "VI 18", etc.
+    hora_reserva: str  # Formato: "18:27:00"
     
 class ReservaResponse(BaseModel):
     id: str
@@ -19,6 +30,17 @@ class ReservaResponse(BaseModel):
     fecha_ejecucion: datetime
     mensaje: str
     error_type: Optional[str] = None  # "NO_CUPOS", "LOGIN_FAILED", "NETWORK_ERROR", etc.
+
+class ReservaProgramadaResponse(BaseModel):
+    id: str
+    clase_nombre: str
+    fecha: str
+    hora_reserva: str
+    estado: EstadoReservaProgramada
+    fecha_programada: datetime
+    mensaje: str
+    tiempo_espera_segundos: int
+    error_type: Optional[str] = None
 
 class ClaseConfig(BaseModel):
     id: str

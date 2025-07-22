@@ -64,14 +64,16 @@ graph TB
 ```python
 class ReservaProgramadaRequest(BaseModel):
     nombre_clase: str                    # "18:00 CrossFit 18:00-19:00"
-    fecha: str                          # "LU 21" 
-    hora_reserva: str                   # "17:00:00" (formato HH:MM:SS)
+    fecha_clase: str                     # "LU 21" (fecha de la clase)
+    fecha_reserva: str                   # "2025-01-19" (fecha cuando ejecutar la reserva)
+    hora_reserva: str                    # "17:00:00" (hora exacta de ejecución)
     timezone: str = "America/Santiago"   # Zona horaria
     
 class ReservaProgramadaResponse(BaseModel):
     id: str
     clase_nombre: str
-    fecha: str
+    fecha_clase: str
+    fecha_reserva: str
     hora_reserva: str
     estado: EstadoReservaProgramada
     fecha_creacion: datetime
@@ -109,13 +111,15 @@ async def reserva_programada(request: ReservaProgramadaRequest):
     
     Parámetros:
     - nombre_clase: Nombre exacto de la clase
-    - fecha: Fecha en formato "XX ##" 
+    - fecha_clase: Fecha de la clase en formato "XX ##" 
+    - fecha_reserva: Fecha cuando ejecutar la reserva en formato "YYYY-MM-DD"
     - hora_reserva: Hora exacta de ejecución en formato "HH:MM:SS"
     
     Ejemplo de uso:
     {
         "nombre_clase": "18:00 CrossFit 18:00-19:00",
-        "fecha": "LU 21",
+        "fecha_clase": "LU 21",
+        "fecha_reserva": "2025-01-19",
         "hora_reserva": "17:00:00"
     }
     """
@@ -180,7 +184,8 @@ timeline
 POST /api/reservas/programada
 {
     "nombre_clase": "18:00 CrossFit 18:00-19:00",
-    "fecha": "LU 21", 
+    "fecha_clase": "LU 21",
+    "fecha_reserva": "2025-01-19", 
     "hora_reserva": "17:00:00"
 }
 
@@ -199,7 +204,8 @@ POST /api/reservas/programada
 POST /api/reservas/programada
 {
     "nombre_clase": "18:00 CrossFit 18:00-19:00",
-    "fecha": "DO 20",
+    "fecha_clase": "DO 20",
+    "fecha_reserva": "2025-01-19",
     "hora_reserva": "17:00:00"
 }
 
@@ -218,7 +224,8 @@ POST /api/reservas/programada
 POST /api/reservas/programada
 {
     "nombre_clase": "18:00 CrossFit 18:00-19:00",
-    "fecha": "DO 20", 
+    "fecha_clase": "DO 20",
+    "fecha_reserva": "2025-01-19", 
     "hora_reserva": "17:00:00"
 }
 
@@ -245,12 +252,13 @@ class DirectTimingController:
     def __init__(self):
         self.timezone = pytz.timezone("America/Santiago")
     
-    def calculate_execution_times(self, target_time_str: str) -> dict:
+    def calculate_execution_times(self, fecha_reserva_str: str, hora_reserva_str: str) -> dict:
         """
         Calcula los dos momentos críticos de ejecución
         
         Args:
-            target_time_str: "17:00:00" (hora objetivo)
+            fecha_reserva_str: "2025-01-19" (fecha de ejecución)
+            hora_reserva_str: "17:00:00" (hora objetivo)
             
         Returns:
         {
@@ -262,17 +270,11 @@ class DirectTimingController:
         }
         """
         now = datetime.now(self.timezone)
-        today = now.date()
         
-        # Crear datetime objetivo para hoy
-        target_datetime = datetime.combine(
-            today, 
-            datetime.strptime(target_time_str, "%H:%M:%S").time()
-        ).replace(tzinfo=self.timezone)
-        
-        # Si ya pasó, intentar mañana
-        if target_datetime <= now:
-            target_datetime += timedelta(days=1)
+        # Crear datetime objetivo usando fecha y hora específicas
+        target_date = datetime.strptime(fecha_reserva_str, "%Y-%m-%d").date()
+        target_time = datetime.strptime(hora_reserva_str, "%H:%M:%S").time()
+        target_datetime = datetime.combine(target_date, target_time).replace(tzinfo=self.timezone)
         
         # Momentos críticos
         prep_datetime = target_datetime - timedelta(minutes=1)
@@ -319,7 +321,10 @@ class ScheduledReservationManager:
         
         try:
             # 1. CALCULAR tiempos exactos (sin ciclos)
-            timing = self.timing_controller.calculate_execution_times(request.hora_reserva)
+            timing = self.timing_controller.calculate_execution_times(
+                request.fecha_reserva, 
+                request.hora_reserva
+            )
             
             if not timing["is_valid"]:
                 return self._create_error_response("TOO_LATE", "La hora ya pasó")
@@ -642,6 +647,341 @@ La especificación está **completamente rediseñada** con:
 
 ---
 
-**Documento finalizado**: 20 de julio de 2025  
-**Versión**: 3.0 - CÁLCULO DIRECTO  
-**Estado**: ✅ Diseño final aprobado
+**Documento finalizado**: 21 de julio de 2025  
+**Versión**: 3.1 - MEJORAS + PLAN DE DESARROLLO  
+**Estado**: ✅ Diseño final aprobado con fecha de reserva
+
+---
+
+# 📋 **PLAN DE DESARROLLO SECUENCIAL**
+
+## 🎯 **Resumen del Plan**
+
+Este es el plan ordenado y secuencial para implementar el nuevo endpoint `/api/reservas/programada` dividido en tareas manejables con seguimiento claro.
+
+## 📅 **FASE 1: Preparación y Modelos Base**
+### **Duración estimada: 1-2 días**
+
+### ✅ **Tarea 1.1: Extender Modelos de Datos**
+**Archivo:** `app/models/reserva.py`
+**Objetivo:** Agregar nuevos modelos para reservas programadas
+
+```python
+# Modelos a agregar:
+- ReservaProgramadaRequest
+- ReservaProgramadaResponse  
+- EstadoReservaProgramada (Enum)
+```
+
+**Criterios de éxito:**
+- [x] Modelos definidos con nuevos campos (fecha_clase, fecha_reserva)
+- [x] Validación de tipos correcta
+- [x] Documentación de campos completa
+
+**Estado:** ⏳ **Pendiente**
+
+---
+
+### ✅ **Tarea 1.2: Crear DirectTimingController**
+**Archivo:** `app/services/direct_timing_controller.py`  
+**Objetivo:** Implementar control de temporización simplificado
+
+**Funciones clave:**
+```python
+- calculate_execution_times(fecha_reserva_str, hora_reserva_str)
+- sleep_until(target_datetime)  
+- validar_fecha_hora(fecha, hora)
+```
+
+**Criterios de éxito:**
+- [x] Cálculo preciso de tiempos de preparación y ejecución
+- [x] Manejo correcto de zona horaria Chile/Santiago
+- [x] Validaciones de fechas futuras
+- [x] Tests unitarios funcionando
+
+**Estado:** ⏳ **Pendiente**
+
+---
+
+### ✅ **Tarea 1.3: Tests Unitarios Temporización**
+**Archivo:** `tests/test_timing_controller.py`
+**Objetivo:** Validar algoritmo de temporización
+
+**Casos de prueba:**
+- [x] Cálculo correcto de tiempos
+- [x] Validación de fechas pasadas  
+- [x] Precisión de sleep_until
+- [x] Manejo de zona horaria
+
+**Estado:** ⏳ **Pendiente**
+
+---
+
+## 📅 **FASE 2: Preparación Web**
+### **Duración estimada: 2-3 días**
+
+### ✅ **Tarea 2.1: Crear PreparationService**
+**Archivo:** `app/services/preparation_service.py`
+**Objetivo:** Manejar navegación web hasta botón de reserva
+
+**Funciones clave:**
+```python
+- prepare_reservation(nombre_clase, fecha_clase) 
+- execute_final_click(page_context, button_selector)
+- validate_button_ready(page_context)
+```
+
+**Integración:**
+- [x] Reutilizar WebAutomationService existente
+- [x] Mantener sesión activa durante espera
+- [x] Detectar y manejar errores de navegación
+
+**Criterios de éxito:**
+- [x] Navegación completa en <60 segundos
+- [x] Sesión estable durante espera
+- [x] Manejo robusto de errores
+
+**Estado:** ⏳ **Pendiente**
+
+---
+
+### ✅ **Tarea 2.2: Tests de Preparación Web**
+**Archivo:** `tests/test_preparation_service.py`
+**Objetivo:** Validar preparación web
+
+**Casos de prueba:**
+- [x] Navegación exitosa hasta botón
+- [x] Manejo de clases no encontradas
+- [x] Recuperación de errores de red
+- [x] Estabilidad de sesión
+
+**Estado:** ⏳ **Pendiente**
+
+---
+
+## 📅 **FASE 3: Orquestador Principal**
+### **Duración estimada: 2-3 días**
+
+### ✅ **Tarea 3.1: Implementar ScheduledReservationManager**
+**Archivo:** `app/services/scheduled_reservation_manager.py`
+**Objetivo:** Orquestador principal del flujo
+
+**Funciones clave:**
+```python
+- execute_scheduled_reservation(request)
+- _prepare_web_navigation(request)
+- _execute_immediate_click(page_context)
+- _create_error_response(error_type, message)
+- _create_success_response(reservation_id, result)
+```
+
+**Flujo principal:**
+1. Validar request y calcular tiempos
+2. Espera directa hasta preparación (T-1 min)
+3. Ejecutar preparación web (60 segundos)
+4. Espera directa hasta ejecución (T+1 ms)
+5. Click inmediato y respuesta
+
+**Criterios de éxito:**
+- [x] Flujo lineal sin ciclos complejos
+- [x] Manejo robusto de errores
+- [x] Logging detallado en cada fase
+- [x] Precisión temporal ±2 segundos
+
+**Estado:** ⏳ **Pendiente**
+
+---
+
+### ✅ **Tarea 3.2: Tests de Integración Orquestador**
+**Archivo:** `tests/test_scheduled_reservation_manager.py`
+**Objetivo:** Validar flujo completo
+
+**Casos de prueba:**
+- [x] Flujo exitoso completo
+- [x] Fallo en preparación web
+- [x] Fallo en ejecución final
+- [x] Validación de timeouts
+
+**Estado:** ⏳ **Pendiente**
+
+---
+
+## 📅 **FASE 4: API Endpoint**  
+### **Duración estimada: 1-2 días**
+
+### ✅ **Tarea 4.1: Crear Nuevo Endpoint**
+**Archivo:** `app/api/reservas.py`
+**Objetivo:** Agregar endpoint /api/reservas/programada
+
+```python
+@router.post("/reservas/programada", response_model=ReservaProgramadaResponse)
+async def reserva_programada(request: ReservaProgramadaRequest):
+```
+
+**Integraciones:**
+- [x] Validación de request con Pydantic
+- [x] Llamada a ScheduledReservationManager
+- [x] Manejo de errores HTTP apropiados
+- [x] Documentación OpenAPI/Swagger
+
+**Criterios de éxito:**
+- [x] Endpoint funcional con validaciones
+- [x] Respuesta inmediata al cliente
+- [x] Proceso en background correcto
+- [x] Documentación API completa
+
+**Estado:** ⏳ **Pendiente**
+
+---
+
+### ✅ **Tarea 4.2: Tests de API**
+**Archivo:** `tests/test_api_reservas_programada.py`
+**Objetivo:** Validar endpoint con diferentes escenarios
+
+**Casos de prueba:**
+- [x] Request válido
+- [x] Request con fecha pasada
+- [x] Request con datos inválidos
+- [x] Timeout del servicio
+
+**Estado:** ⏳ **Pendiente**
+
+---
+
+## 📅 **FASE 5: Validación y Refinamiento**
+### **Duración estimada: 2-3 días**
+
+### ✅ **Tarea 5.1: Tests de Precisión Temporal**
+**Archivo:** `tests/test_precision_timing.py`
+**Objetivo:** Validar precisión de ejecución
+
+**Métricas objetivo:**
+- [x] Precisión: ±2 segundos del momento objetivo
+- [x] Preparación: <60 segundos consistente
+- [x] Estabilidad: >95% sin errores de timing
+
+**Herramientas:**
+- [x] Tests con fechas muy cercanas (2-5 minutos)
+- [x] Medición de deriva temporal
+- [x] Validación de asyncio.sleep precision
+
+**Estado:** ⏳ **Pendiente**
+
+---
+
+### ✅ **Tarea 5.2: Optimización y Logging**
+**Archivos:** Múltiples
+**Objetivo:** Refinar implementación
+
+**Optimizaciones:**
+- [x] Logging estructurado en todas las fases
+- [x] Métricas de performance
+- [x] Manejo de memory leaks en esperas largas
+- [x] Configuración de timeouts apropiados
+
+**Estado:** ⏳ **Pendiente**
+
+---
+
+### ✅ **Tarea 5.3: Tests de Carga y Resistencia**
+**Archivo:** `tests/test_load_scheduled.py`
+**Objetivo:** Validar comportamiento bajo carga
+
+**Escenarios:**
+- [x] Múltiples reservas programadas simultáneas
+- [x] Esperas de varias horas
+- [x] Recuperación de fallos de red
+- [x] Comportamiento en servidor bajo carga
+
+**Estado:** ⏳ **Pendiente**
+
+---
+
+## 📅 **FASE 6: Documentación y Productivización**
+### **Duración estimada: 1-2 días**
+
+### ✅ **Tarea 6.1: Documentación Usuario**
+**Archivo:** `docs/user/reserva-programada-guia.md`
+**Objetivo:** Documentar uso del nuevo endpoint
+
+**Contenido:**
+- [x] Ejemplos de uso con Postman
+- [x] Casos de uso comunes
+- [x] Troubleshooting de errores
+- [x] Mejores prácticas
+
+**Estado:** ⏳ **Pendiente**
+
+---
+
+### ✅ **Tarea 6.2: Monitoreo de Producción**
+**Archivos:** Configuración de logs
+**Objetivo:** Preparar monitoring para producción
+
+**Implementaciones:**
+- [x] Dashboards de métricas clave
+- [x] Alertas para fallos críticos
+- [x] Logs estructurados para debugging
+- [x] Health checks del servicio
+
+**Estado:** ⏳ **Pendiente**
+
+---
+
+## 🎯 **CRITERIOS DE FINALIZACIÓN**
+
+### ✅ **Funcionalidad Completa**
+- [x] Endpoint funcional y documentado
+- [x] Precisión temporal ±2 segundos
+- [x] Tasa de éxito >90% en condiciones normales
+- [x] Manejo robusto de todos los casos de error
+
+### ✅ **Calidad de Código**
+- [x] Cobertura de tests >85%
+- [x] Documentación técnica completa
+- [x] Code review aprobado
+- [x] Performance validado
+
+### ✅ **Productivización**
+- [x] Logs y monitoreo configurados
+- [x] Documentación de usuario
+- [x] Deployment exitoso
+- [x] Validación en ambiente real
+
+---
+
+## 📊 **SEGUIMIENTO DE PROGRESO**
+
+### **Dashboard de Tareas**
+```
+📅 FASE 1: Preparación y Modelos Base
+├── 🔲 Tarea 1.1: Extender Modelos de Datos
+├── 🔲 Tarea 1.2: Crear DirectTimingController  
+└── 🔲 Tarea 1.3: Tests Unitarios Temporización
+
+📅 FASE 2: Preparación Web
+├── 🔲 Tarea 2.1: Crear PreparationService
+└── 🔲 Tarea 2.2: Tests de Preparación Web
+
+📅 FASE 3: Orquestador Principal
+├── 🔲 Tarea 3.1: Implementar ScheduledReservationManager
+└── 🔲 Tarea 3.2: Tests de Integración Orquestador
+
+📅 FASE 4: API Endpoint
+├── 🔲 Tarea 4.1: Crear Nuevo Endpoint
+└── 🔲 Tarea 4.2: Tests de API
+
+📅 FASE 5: Validación y Refinamiento
+├── 🔲 Tarea 5.1: Tests de Precisión Temporal
+├── 🔲 Tarea 5.2: Optimización y Logging
+└── 🔲 Tarea 5.3: Tests de Carga y Resistencia
+
+📅 FASE 6: Documentación y Productivización
+├── 🔲 Tarea 6.1: Documentación Usuario
+└── 🔲 Tarea 6.2: Monitoreo de Producción
+```
+
+### **Próxima Acción Recomendada**
+🚀 **Comenzar con Tarea 1.1: Extender Modelos de Datos**
+
+**¿Estás listo para comenzar con la implementación del primer componente?**
