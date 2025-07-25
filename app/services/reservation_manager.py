@@ -1,9 +1,9 @@
-import uuid
 from datetime import datetime
+import uuid
 from typing import Dict, Any
 from loguru import logger
 
-from app.models import ClaseConfig, EstadoReserva, ReservaResponse
+from app.models import ClaseConfig, EstadoReserva
 from app.services.config_manager import ConfigManager
 from app.services.web_automation import WebAutomationService
 
@@ -17,7 +17,7 @@ class ReservationManager:
         self.config_manager = ConfigManager()
         self.web_automation = WebAutomationService()
     
-    async def execute_immediate_reservation(self, nombre_clase: str, fecha: str) -> ReservaResponse:
+    async def execute_immediate_reservation(self, nombre_clase: str, fecha: str) -> Dict[str, Any]:
         """
         Ejecuta una reserva inmediata para una clase específica identificada por su nombre
         
@@ -27,7 +27,7 @@ class ReservationManager:
                          Ejemplo: '17:00 CrossFit 17:00-18:00'
             
         Returns:
-            ReservaResponse con el resultado
+            Dict con el resultado en lugar de ReservaResponse
         """
         reservation_id = str(uuid.uuid4())
         timestamp = datetime.now()
@@ -45,14 +45,11 @@ class ReservationManager:
             # 2. Validar credenciales
             if not self.web_automation.validate_credentials():
                 logger.error("❌ Credenciales no configuradas correctamente")
-                return ReservaResponse(
-                    id=reservation_id,
-                    clase_nombre=nombre_clase,
-                    estado=EstadoReserva.FALLIDA,
-                    fecha_ejecucion=timestamp,
-                    mensaje="Credenciales no configuradas",
-                    error_type="CREDENTIALS_ERROR"
-                )
+                return {
+                    "success": False,
+                    "message": "Credenciales no configuradas",
+                    "error_type": "CREDENTIALS_ERROR"
+                }
             
             # 3. Ejecutar la automatización web directamente con el nombre y fecha
             logger.info(f"🤖 Iniciando automatización web para: '{nombre_clase}' en fecha: '{fecha}'")
@@ -61,40 +58,24 @@ class ReservationManager:
             # 4. Procesar resultado
             if result["success"]:
                 logger.success(f"🎉 ¡Reserva exitosa! - {nombre_clase}")
-                return ReservaResponse(
-                    id=reservation_id,
-                    clase_nombre=nombre_clase,
-                    estado=EstadoReserva.EXITOSA,
-                    fecha_ejecucion=timestamp,
-                    mensaje=result["message"]
-                )
+                return {
+                    "success": True,
+                    "message": result["message"]
+                }
             else:
-                # Determinar el tipo de error específico
-                error_type = result.get("error_type")
-                if error_type == "NO_CUPOS":
-                    logger.warning(f"⚠️ Sin cupos disponibles para: {nombre_clase}")
-                else:
-                    logger.error(f"💥 Fallo en la reserva: {result['message']}")
-                
-                return ReservaResponse(
-                    id=reservation_id,
-                    clase_nombre=nombre_clase,
-                    estado=EstadoReserva.FALLIDA,
-                    fecha_ejecucion=timestamp,
-                    mensaje=result["message"],
-                    error_type=error_type
-                )
+                return {
+                    "success": False,
+                    "message": result["message"],
+                    "error_type": result.get("error_type", "UNKNOWN_ERROR")
+                }
                 
         except Exception as e:
             logger.error(f"🚨 Error inesperado en reserva: {str(e)}")
-            return ReservaResponse(
-                id=reservation_id,
-                clase_nombre=nombre_clase,
-                estado=EstadoReserva.FALLIDA,
-                fecha_ejecucion=timestamp,
-                mensaje=f"Error inesperado: {str(e)}",
-                error_type="UNEXPECTED_ERROR"
-            )
+            return {
+                "success": False,
+                "message": f"Error inesperado: {str(e)}",
+                "error_type": "UNEXPECTED_ERROR"
+            }
     
     def get_available_classes(self):
         """Obtiene todas las clases disponibles"""

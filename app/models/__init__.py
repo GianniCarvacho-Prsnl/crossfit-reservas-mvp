@@ -1,8 +1,11 @@
 # Importar todos los modelos desde reserva.py
 from .reserva import (
     EstadoReserva,
+    EstadoReservaProgramada,
     ReservaInmediataRequest,
+    ReservaProgramadaRequest,
     ReservaResponse,
+    ReservaProgramadaResponse,
     ClaseConfig,
     HealthResponse
 )
@@ -10,8 +13,11 @@ from .reserva import (
 # Exportar para facilitar las importaciones
 __all__ = [
     "EstadoReserva",
-    "ReservaInmediataRequest", 
+    "EstadoReservaProgramada",
+    "ReservaInmediataRequest",
+    "ReservaProgramadaRequest", 
     "ReservaResponse",
+    "ReservaProgramadaResponse",
     "ClaseConfig",
     "HealthResponse"
 ]
