@@ -42,6 +42,19 @@ ENV/
 *.swp
 *.swo
 
+# Documentación y requerimientos (ARCHIVOS NO USADOS)
+docs/
+requerimiento/
+requerimiento-simple/
+contexto-proxima-conversacion.md
+README.md
+
+# Tests (excluir en producción)
+tests/
+
+# Archivos de automatización no utilizados
+app/services/mcp_automation.py
+
 # OS
 .DS_Store
 .DS_Store?
