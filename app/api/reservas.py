@@ -12,10 +12,15 @@ from app.models import (
 )
 from app.services.reservation_manager import ReservationManager
 from app.services.scheduled_reservation_manager import ScheduledReservationManager
+from app.services.config_manager import ConfigManager
 
 router = APIRouter()
 reservation_manager = ReservationManager()
 scheduled_reservation_manager = ScheduledReservationManager()
+
+# NOTA: Este diccionario solo previene duplicidad para una clase por día.
+# Si en el futuro se soportan múltiples reservas por día, este mecanismo debe ser ajustado.
+reservas_en_curso = {}
 
 
 @router.post("/reservas/inmediata", response_model=ReservaResponse)
@@ -73,6 +78,16 @@ async def reserva_programada(request: ReservaProgramadaRequest):
     }
     """
     try:
+        # Log de los parámetros enviados
+        import pprint
+        pprint.pprint({
+            'nombre_clase': request.nombre_clase,
+            'fecha_clase': request.fecha_clase,
+            'fecha_reserva': request.fecha_reserva,
+            'hora_reserva': request.hora_reserva,
+            'timezone': request.timezone
+        })
+        
         # Ejecutar en background y devolver respuesta inmediata
         import asyncio
         
@@ -125,3 +140,34 @@ async def health_check():
         status="healthy",
         timestamp=datetime.now()
     )
+
+
+@router.post("/ejecutar-reservas-hoy", response_model=ReservaProgramadaResponse)
+async def ejecutar_reservas_hoy():
+    """
+    Ejecuta la reserva programada para hoy si corresponde, usando la lógica de detección automática.
+    Devuelve la misma respuesta que /reservas/programada.
+    """
+    config_manager = ConfigManager()
+    params = config_manager.detectar_clase_para_hoy()
+    if not params:
+        raise HTTPException(status_code=404, detail="No hay clase activa para reservar hoy.")
+    # --- Validación: solo para una clase por día ---
+    # Si la hora de reserva ya pasó, no ejecutar la reserva
+    # PENDIENTE: Si se soportan múltiples reservas por día, revisar esta lógica
+    fecha_reserva = params['fecha_reserva']
+    hora_reserva = params['hora_reserva']
+    dt_reserva = datetime.strptime(f"{fecha_reserva} {hora_reserva}", "%Y-%m-%d %H:%M:%S")
+    if dt_reserva < datetime.now():
+        raise HTTPException(status_code=409, detail="La hora de reserva ya pasó. No se ejecuta la reserva.")
+    key = (params['nombre_clase'], params['fecha_reserva'], params['hora_reserva'])
+    if key in reservas_en_curso:
+        raise HTTPException(status_code=409, detail="Ya hay una reserva programada en curso para este horario.")
+    # Log para depuración: mostrar reservas_en_curso antes y después
+    import pprint
+    pprint.pprint({'[ENDPOINT] reservas_en_curso antes': reservas_en_curso})
+    reservas_en_curso[key] = True
+    pprint.pprint({'[ENDPOINT] reservas_en_curso después': reservas_en_curso})
+    request = ReservaProgramadaRequest(**params)
+    # Llamada directa a la función de reserva programada
+    return await reserva_programada(request)

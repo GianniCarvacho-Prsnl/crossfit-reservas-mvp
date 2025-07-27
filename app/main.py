@@ -53,6 +53,31 @@ async def startup_event():
     logger.info(f"👤 Usuario: {os.getenv('USERNAME')}")
     logger.info("✅ Aplicación iniciada correctamente")
 
+    # --- Ejecución automática de reserva programada al iniciar el servidor ---
+    from app.services.config_manager import ConfigManager
+    from app.models import ReservaProgramadaRequest
+    from app.services.scheduled_reservation_manager import ScheduledReservationManager
+    import asyncio
+
+    logger.info("🔎 Verificando si corresponde ejecutar reserva programada al iniciar el servidor...")
+    config_manager = ConfigManager()
+    params = config_manager.detectar_clase_para_hoy()
+    if params:
+        logger.info(f"✅ Clase activa detectada para hoy: {params['nombre_clase']} - Ejecutando reserva programada...")
+        request = ReservaProgramadaRequest(**params)
+        scheduled_manager = ScheduledReservationManager()
+        # Ejecutar en background (no bloquear el arranque)
+        asyncio.create_task(scheduled_manager.execute_scheduled_reservation(request))
+    else:
+        logger.info("⏭️  No hay clase activa para reservar hoy. No se ejecuta reserva automática.")
+
+    # --- Log para depuración: mostrar reservas en curso antes y después ---
+    from app.api.reservas import reservas_en_curso
+    logger.info(f"[STARTUP] reservas_en_curso antes: {reservas_en_curso}")
+    key = (params['nombre_clase'], params['fecha_reserva'], params['hora_reserva'])
+    reservas_en_curso[key] = True
+    logger.info(f"[STARTUP] reservas_en_curso después: {reservas_en_curso}")
+
 @app.on_event("shutdown")
 async def shutdown_event():
     """Evento de cierre de la aplicación"""
