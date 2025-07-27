@@ -7,6 +7,8 @@
 | `/` | GET | Endpoint raíz informativo | ✅ Activo |
 | `/health` | GET/HEAD | Health check para Docker | ✅ Activo |
 | `/api/reservas/inmediata` | POST | Ejecutar reserva inmediata | ✅ Activo |
+| `/api/ejecutar-reservas-hoy` | POST | Ejecutar reserva programada automáticamente para hoy (según config) | ✅ Activo |
+| `/api/reservas/programada` | POST | Ejecutar reserva programada para una clase y horario específico | ✅ Activo |
 
 ---
 
@@ -188,6 +190,98 @@ Endpoint informativo que proporciona información básica del servicio.
   "docs": "/docs"
 }
 ```
+
+---
+
+## 🚦 `/api/ejecutar-reservas-hoy` - Ejecución Automática de Reserva Programada
+
+### Descripción
+Endpoint que ejecuta la reserva programada para hoy, según la configuración de clases activas en el sistema. Utiliza la misma lógica que el arranque automático del servidor.
+
+### Request
+
+#### Método: `POST`
+#### Content-Type: `application/json`
+#### Sin parámetros en el body
+
+#### Ejemplo de Request:
+```bash
+curl -X POST "http://localhost:8001/api/ejecutar-reservas-hoy"
+```
+
+### Response
+
+#### Modelo de Respuesta:
+Igual a `/api/reservas/programada` (ver más abajo)
+
+#### Casos de Respuesta
+- **200 OK**: Reserva programada lanzada correctamente (proceso en background)
+- **404 Not Found**: No hay clase activa para reservar hoy
+- **409 Conflict**: Ya existe una reserva programada en curso para ese horario
+
+---
+
+## ⏰ `/api/reservas/programada` - Reserva Programada
+
+### Descripción
+Endpoint que permite ejecutar una reserva programada para una clase y horario específico. Usado internamente por el endpoint automático y disponible para pruebas/manual.
+
+### Request
+
+#### Método: `POST`
+#### Content-Type: `application/json`
+
+#### Parámetros del Body:
+```json
+{
+  "nombre_clase": "string",
+  "fecha_clase": "string",  // Formato "XX ##" (ej: "LU 21")
+  "fecha_reserva": "string", // Formato "YYYY-MM-DD"
+  "hora_reserva": "string",  // Formato "HH:MM:SS"
+  "timezone": "America/Santiago"
+}
+```
+
+#### Ejemplo de Request:
+```bash
+curl -X POST "http://localhost:8001/api/reservas/programada" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre_clase": "08:00 METCOM 10:00-11:00",
+    "fecha_clase": "SU 27",
+    "fecha_reserva": "2025-07-26",
+    "hora_reserva": "09:00:00",
+    "timezone": "America/Santiago"
+  }'
+```
+
+### Response
+
+#### Modelo de Respuesta:
+```json
+{
+  "id": "string",
+  "clase_nombre": "string",
+  "fecha_clase": "string",
+  "fecha_reserva": "string",
+  "hora_reserva": "string",
+  "estado": "programada|exitosa|fallida",
+  "fecha_creacion": "datetime",
+  "fecha_ejecucion_programada": "datetime",
+  "fecha_ejecucion_real": "datetime|null",
+  "mensaje": "string",
+  "tiempo_espera_segundos": 0,
+  "error_type": "string|null"
+}
+```
+
+#### Casos de Respuesta
+- **200 OK**: Reserva programada lanzada correctamente (proceso en background)
+- **500 Internal Server Error**: Error crítico del servidor
+
+---
+
+> **Nota:** El endpoint `/api/ejecutar-reservas-hoy` previene duplicidad de reservas para la misma clase y horario usando un control en memoria. Si se soportan múltiples reservas por día, este mecanismo debe ser ajustado.
 
 ---
 

@@ -1,28 +1,61 @@
 {
-  "clases": [
-    {
-      "id": "competitor-1800",
-      "nombre": "Competitor 18:00-19:00",
-      "dia_semana": "jueves",
-      "hora_inicio": "18:00",
-      "hora_reserva": "17:00",
+  "clases_por_dia": {
+    "lunes": {
+      "nombre_clase": "08:00 CrossFit 08:00-09:00",
+      "fecha_clase": "Lunes",
+      "selector": "lu",
+      "fecha_reserva": "Domingo",
+      "hora_reserva": "18:00:00",
       "activo": true
     },
-    {
-      "id": "crossfit-1700",
-      "nombre": "17:00 CrossFit 17:00-18:00",
-      "dia_semana": "jueves", 
-      "hora_inicio": "17:00",
-      "hora_reserva": "16:00",
+    "martes": {
+      "nombre_clase": "19:00 METCOM 19:00-20:00",
+      "fecha_clase": "Martes",
+      "selector": "ma",
+      "fecha_reserva": "Lunes",
+      "hora_reserva": "18:00:00",
+      "activo": true
+
+    },
+    "miercoles": {
+      "nombre_clase": "08:00 Competitor 08:00-09:00",
+      "fecha_clase": "Miercoles",
+      "selector": "mi",
+      "fecha_reserva": "Martes",
+      "hora_reserva": "18:00:00",
       "activo": true
     },
-    {
-      "id": "crossfit-0800",
-      "nombre": "08:00 CrossFit 08:00-09:00",
-      "dia_semana": "jueves",
-      "hora_inicio": "08:00",
-      "hora_reserva": "07:00",
+    "jueves": {
+      "nombre_clase": "19:00 METCOM 19:00-20:00",
+      "fecha_clase": "Jueves",
+      "selector": "ju",
+      "fecha_reserva": "Miércoles",
+      "hora_reserva": "18:00:00",
+      "activo": true
+    },
+    "viernes": {
+      "nombre_clase": "08:00 Competitor 08:00-09:00",
+      "fecha_clase": "Viernes",
+      "selector": "vi",
+      "fecha_reserva": "Jueves",
+      "hora_reserva": "18:00:00",
+      "activo": true
+    },
+    "sabado": {
+      "nombre_clase": "08:00 METCOM 10:00-11:00",
+      "fecha_clase": "Sábado",
+      "selector": "sa",
+      "fecha_reserva": "Viernes",
+      "hora_reserva": "09:00:00",
+      "activo": true
+    },
+    "domingo": {
+      "nombre_clase": "08:00 METCOM 10:00-11:00",
+      "fecha_clase": "Domingo",
+      "selector": "sa",
+      "fecha_reserva": "Sábado",
+      "hora_reserva": "20:30:00",
       "activo": true
     }
-  ]
-}
+  }
+} 
