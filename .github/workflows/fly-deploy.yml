@@ -2,6 +2,7 @@
 
 name: Activar magicbox-reserva a las 17:00 Chile
 on:
+  workflow_dispatch:
   schedule:
     - cron: '0 20 * * *'  # corresponde a 17:00 CLT (UTC−3)
 jobs:
