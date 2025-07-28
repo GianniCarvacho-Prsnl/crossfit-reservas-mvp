@@ -51,6 +51,9 @@ COPY requirements.txt .
 # Instalar dependencias de Python
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Verificar que pytz está instalado
+RUN pip show pytz
+
 # Instalar navegadores de Playwright (como root para permisos)
 RUN playwright install chromium
 RUN playwright install-deps chromium

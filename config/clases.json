@@ -1,11 +1,11 @@
 {
   "clases_por_dia": {
     "lunes": {
-      "nombre_clase": "08:00 CrossFit 08:00-09:00",
+      "nombre_clase": "20:00 CrossFit 20:00-21:00",
       "fecha_clase": "Lunes",
       "selector": "lu",
       "fecha_reserva": "Domingo",
-      "hora_reserva": "18:00:00",
+      "hora_reserva": "20:20:00",
       "activo": true
     },
     "martes": {

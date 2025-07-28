@@ -1,0 +1,25 @@
+# fly.toml app configuration file generated for magicbox-reserva on 2025-07-26T20:55:41-04:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'magicbox-reserva'
+primary_region = 'gig'
+
+[build]
+
+[http_service]
+  internal_port = 8001
+  force_https = true
+  auto_stop_machines = 'suspend'
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ['app']
+
+[env]
+  TZ = "America/Santiago"
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
