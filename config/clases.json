@@ -1,24 +1,24 @@
 {
   "clases_por_dia": {
     "lunes": {
-      "nombre_clase": "20:00 CrossFit 20:00-21:00",
+      "nombre_clase": "Competitor 19:00-20:00",
       "fecha_clase": "Lunes",
       "selector": "lu",
       "fecha_reserva": "Domingo",
-      "hora_reserva": "20:20:00",
+      "hora_reserva": "18:00:00",
       "activo": true
     },
     "martes": {
-      "nombre_clase": "19:00 METCOM 19:00-20:00",
+      "nombre_clase": "METCON 19:00-20:00",
       "fecha_clase": "Martes",
       "selector": "ma",
       "fecha_reserva": "Lunes",
-      "hora_reserva": "18:00:00",
+      "hora_reserva": "10:00:00",
       "activo": true
 
     },
     "miercoles": {
-      "nombre_clase": "08:00 Competitor 08:00-09:00",
+      "nombre_clase": "Competitor 19:00-20:00",
       "fecha_clase": "Miercoles",
       "selector": "mi",
       "fecha_reserva": "Martes",
@@ -26,7 +26,7 @@
       "activo": true
     },
     "jueves": {
-      "nombre_clase": "19:00 METCOM 19:00-20:00",
+      "nombre_clase": "METCON 19:00-20:00",
       "fecha_clase": "Jueves",
       "selector": "ju",
       "fecha_reserva": "Miércoles",
@@ -34,7 +34,7 @@
       "activo": true
     },
     "viernes": {
-      "nombre_clase": "08:00 Competitor 08:00-09:00",
+      "nombre_clase": "Competitor 19:00-20:00",
       "fecha_clase": "Viernes",
       "selector": "vi",
       "fecha_reserva": "Jueves",
@@ -47,14 +47,6 @@
       "selector": "sa",
       "fecha_reserva": "Viernes",
       "hora_reserva": "09:00:00",
-      "activo": true
-    },
-    "domingo": {
-      "nombre_clase": "08:00 METCOM 10:00-11:00",
-      "fecha_clase": "Domingo",
-      "selector": "sa",
-      "fecha_reserva": "Sábado",
-      "hora_reserva": "20:30:00",
       "activo": true
     }
   }
