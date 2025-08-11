@@ -1,0 +1,49 @@
+name: Ventana Fly (15:00–20:00 America/Santiago)
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"     # corre cada 5 minutos (en UTC)
+  workflow_dispatch: {}        # permite ejecutarlo a mano para probar
+
+jobs:
+  control:
+    runs-on: ubuntu-latest
+    env:
+      APP: crossfit-reservas-mvp
+      FLY_API_HOSTNAME: https://api.machines.dev
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    steps:
+      - name: Instalar jq y curl
+        run: sudo apt-get update && sudo apt-get install -y jq curl
+
+      - name: Calcular hora local de Santiago
+        id: clock
+        run: |
+          export TZ=America/Santiago
+          echo "now=$(date +%H%M)" >> $GITHUB_OUTPUT
+
+      - name: Listar machines
+        run: |
+          curl -fsSL -H "Authorization: Bearer $FLY_API_TOKEN" \
+            "$FLY_API_HOSTNAME/v1/apps/$APP/machines" -o machines.json
+          echo "IDs detectados:" && jq -r '.[].id' machines.json
+
+      - name: Start/Stop según ventana 15:00–20:00
+        run: |
+          H="${{ steps.clock.outputs.now }}"
+          in_window=0
+          if [ "$H" -ge "1500" ] && [ "$H" -lt "2000" ]; then in_window=1; fi
+
+          for id in $(jq -r '.[].id' machines.json); do
+            if [ $in_window -eq 1 ]; then
+              echo "▶️ START $id"
+              curl -fsS -X POST -H "Authorization: Bearer $FLY_API_TOKEN" \
+                "$FLY_API_HOSTNAME/v1/apps/$APP/machines/$id/start"
+              # (opcional) pequeño warmup:
+              curl -fsS "https://$APP.fly.dev/health" || true
+            else
+              echo "⏹ STOP $id"
+              curl -fsS -X POST -H "Authorization: Bearer $FLY_API_TOKEN" \
+                "$FLY_API_HOSTNAME/v1/apps/$APP/machines/$id/stop"
+            fi
+          done
