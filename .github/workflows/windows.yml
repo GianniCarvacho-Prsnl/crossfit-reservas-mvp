@@ -1,9 +1,24 @@
-name: Ventana Fly (15:00–20:00 America/Santiago)
+name: Ventana Fly (crossfit-reservas-mvp · 17:00–20:00 CL)
 
 on:
   schedule:
-    - cron: "*/5 * * * *"     # corre cada 5 minutos (en UTC)
-  workflow_dispatch: {}        # permite ejecutarlo a mano para probar
+    # --- EJECUTAR SOLO EN LA VENTANA ---
+    # Invierno Chile (UTC-4): 17:00–19:59 CL = 21:00–23:59 UTC
+    - cron: "*/5 21-23 * * *"
+    # Verano Chile (UTC-3): 17:00–19:59 CL = 20:00–22:59 UTC
+    - cron: "*/5 20-22 * * *"
+
+    # --- STOP EXACTO A LAS 20:00 CL ---
+    # Invierno CL (UTC-4): 20:00 CL = 00:00 UTC (día siguiente)
+    - cron: "0 0 * * *"
+    # Verano CL (UTC-3): 20:00 CL = 23:00 UTC
+    - cron: "0 23 * * *"
+
+  workflow_dispatch: {}   # permitir ejecuciones manuales
+
+concurrency:
+  group: fly-window-crossfit-reservas-mvp
+  cancel-in-progress: true
 
 jobs:
   control:
@@ -13,37 +28,44 @@ jobs:
       FLY_API_HOSTNAME: https://api.machines.dev
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
     steps:
-      - name: Instalar jq y curl
-        run: sudo apt-get update && sudo apt-get install -y jq curl
+      - name: Instalar jq
+        run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Calcular hora local de Santiago
-        id: clock
+      - name: Detectar si este cron es de STOP o de START
+        id: mode
         run: |
-          export TZ=America/Santiago
-          echo "now=$(date +%H%M)" >> $GITHUB_OUTPUT
+          # Si la hora UTC es 23:00 o 00:00, consideramos este run como STOP
+          H=$(date -u +%H)
+          if [ "$H" = "23" ] || [ "$H" = "00" ]; then
+            echo "mode=stop" >> $GITHUB_OUTPUT
+          else
+            echo "mode=start" >> $GITHUB_OUTPUT
+          fi
 
       - name: Listar machines
         run: |
           curl -fsSL -H "Authorization: Bearer $FLY_API_TOKEN" \
             "$FLY_API_HOSTNAME/v1/apps/$APP/machines" -o machines.json
-          echo "IDs detectados:" && jq -r '.[].id' machines.json
+          echo "IDs:" && jq -r '.[].id' machines.json
 
-      - name: Start/Stop según ventana 15:00–20:00
+      - name: START solo una máquina (la primera)
+        if: steps.mode.outputs.mode == 'start'
         run: |
-          H="${{ steps.clock.outputs.now }}"
-          in_window=0
-          if [ "$H" -ge "1500" ] && [ "$H" -lt "2000" ]; then in_window=1; fi
+          ONE_ID=$(jq -r '.[0].id // empty' machines.json)
+          if [ -z "$ONE_ID" ]; then
+            echo "No hay machines"; exit 1
+          fi
+          echo "▶️ START $ONE_ID"
+          curl -fsS -X POST -H "Authorization: Bearer $FLY_API_TOKEN" \
+            "$FLY_API_HOSTNAME/v1/apps/$APP/machines/$ONE_ID/start"
+          # (warmup opcional)
+          curl -fsS "https://$APP.fly.dev/health" || true
 
+      - name: STOP (apaga todas por seguridad)
+        if: steps.mode.outputs.mode == 'stop'
+        run: |
           for id in $(jq -r '.[].id' machines.json); do
-            if [ $in_window -eq 1 ]; then
-              echo "▶️ START $id"
-              curl -fsS -X POST -H "Authorization: Bearer $FLY_API_TOKEN" \
-                "$FLY_API_HOSTNAME/v1/apps/$APP/machines/$id/start"
-              # (opcional) pequeño warmup:
-              curl -fsS "https://$APP.fly.dev/health" || true
-            else
-              echo "⏹ STOP $id"
-              curl -fsS -X POST -H "Authorization: Bearer $FLY_API_TOKEN" \
-                "$FLY_API_HOSTNAME/v1/apps/$APP/machines/$id/stop"
-            fi
+            echo "⏹ STOP $id"
+            curl -fsS -X POST -H "Authorization: Bearer $FLY_API_TOKEN" \
+              "$FLY_API_HOSTNAME/v1/apps/$APP/machines/$id/stop"
           done
