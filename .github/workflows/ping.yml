@@ -1,4 +1,4 @@
-name: Mantener activa Fly (17:00–20:00 CL)
+name: Ping (17:00–20:00 CL)
 
 on:
   schedule:
