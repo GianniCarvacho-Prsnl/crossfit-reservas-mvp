@@ -12,7 +12,10 @@ jobs:
     env:
       APP: crossfit-reservas-mvp
     steps:
-      - name: Hacer ping a la app
+      - name: Hacer ping a la app con log
         run: |
-          echo "🌐 Ping https://$APP.fly.dev"
-          curl -fsS "https://$APP.fly.dev/health" || true
+          export TZ=America/Santiago
+          echo "🕒 Hora CL: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "🌐 Ping https://$APP.fly.dev/health"
+          HTTP_CODE=$(curl -o /dev/null -s -w "%{http_code}" "https://$APP.fly.dev/health")
+          echo "📡 Código HTTP: $HTTP_CODE"
