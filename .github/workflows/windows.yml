@@ -29,11 +29,14 @@ jobs:
       - name: Detectar si este cron es STOP o START
         id: mode
         run: |
-          H=$(date -u +%H)
-          if [ "$H" = "23" ] || [ "$H" = "00" ]; then
-            echo "mode=stop" >> $GITHUB_OUTPUT
-          else
+          # Determinar START/STOP usando hora local de Chile
+          export TZ=America/Santiago
+          H=$(date +%H%M)
+          echo "Hora local CL detectada: $H"
+          if [ "$H" -ge "1700" ] && [ "$H" -lt "2000" ]; then
             echo "mode=start" >> $GITHUB_OUTPUT
+          else
+            echo "mode=stop" >> $GITHUB_OUTPUT
           fi
 
       - name: Listar machines
