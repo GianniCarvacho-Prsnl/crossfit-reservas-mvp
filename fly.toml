@@ -9,12 +9,15 @@ primary_region = 'gru'
 [build]
 
 [http_service]
+  auto_stop_machines = "stop"   # se apaga sola sin tráfico
+  auto_start_machines = true    # cualquier request (el PING) la enciende
+  min_machines_running = 0
   internal_port = 8001
   force_https = true
-  auto_stop_machines = 'stop'
-  auto_start_machines = true
-  min_machines_running = 0
-  processes = ['app']
+  processes = ["app"]
+
+[env]
+  TZ = "America/Santiago"
 
 [[vm]]
   memory = '1gb'

@@ -1,21 +1,36 @@
-name: Ping (17:00–20:00 CL)
+name: Ping (crossfit-reservas-mvp · 17:00–20:00 CL)
 
 on:
   schedule:
-    - cron: "*/2 21-23 * * *"  # Invierno CL (UTC-4): 17–19 = 21–23 UTC
-    - cron: "*/2 20-22 * * *"  # Verano  CL (UTC-3): 17–19 = 20–22 UTC
-  workflow_dispatch: {}
+    # Invierno CL (UTC-4): 17–19 = 21–23 UTC (cada 2 min)
+    - cron: "*/2 21-23 * * *"
+    # Verano CL (UTC-3): 17–19 = 20–22 UTC (cada 2 min)
+    - cron: "*/2 20-22 * * *"
+  workflow_dispatch: {}        # por si quieres probarlo manual
+
+concurrency:
+  group: ping-crossfit-reservas-mvp
+  cancel-in-progress: true
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     env:
-      APP: crossfit-reservas-mvp
+      URL: https://crossfit-reservas-mvp.fly.dev/health
     steps:
-      - name: Hacer ping a la app con log
+      - name: Ping con log y retry
         run: |
           export TZ=America/Santiago
-          echo "🕒 Hora CL: $(date '+%Y-%m-%d %H:%M:%S')"
-          echo "🌐 Ping https://$APP.fly.dev/health"
-          HTTP_CODE=$(curl -o /dev/null -s -w "%{http_code}" "https://$APP.fly.dev/health")
-          echo "📡 Código HTTP: $HTTP_CODE"
+          echo "🕒 CL: $(date '+%Y-%m-%d %H:%M:%S')"
+          echo "🌐 $URL"
+          for i in 1 2 3; do
+            CODE=$(curl -o /dev/null -s -w '%{http_code}' "$URL")
+            echo "Intento $i → HTTP $CODE"
+            # si ya respondió 2xx/3xx, suficiente
+            if [ "$CODE" -ge 200 ] && [ "$CODE" -lt 400 ]; then
+              exit 0
+            fi
+            sleep 10
+          done
+          # no fallamos el job aunque no llegue 200; igual despertó la app
+          exit 0
