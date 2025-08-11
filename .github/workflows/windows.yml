@@ -22,22 +22,43 @@ jobs:
       - name: Instalar jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
+      - name: Determinar modo (START/STOP)
+        id: mode
+        run: |
+          MODE=""
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Ejecución manual: decide por hora local de Chile
+            export TZ=America/Santiago
+            H=$(date +%H%M)
+            echo "Hora local CL: $H"
+            if [ "$H" -ge "1700" ] && [ "$H" -lt "2000" ]; then MODE="start"; else MODE="stop"; fi
+          else
+            # Ejecución por cron: decide por la regla programada
+            case "${{ github.event.schedule }}" in
+              "0 21 * * *"|"0 20 * * *") MODE="start" ;;   # 17:00 CL (invierno/verano)
+              "0 0 * * *"|"0 23 * * *") MODE="stop"  ;;   # 20:00 CL (invierno/verano)
+              *) MODE="start" ;;  # fallback seguro
+            esac
+          fi
+          echo "mode=$MODE" >> $GITHUB_OUTPUT
+          echo "Modo decidido: $MODE"
+
       - name: Listar machines
         run: |
           curl -fsSL -H "Authorization: Bearer $FLY_API_TOKEN" \
             "$FLY_API_HOSTNAME/v1/apps/$APP/machines" -o machines.json
           jq -r '.[].id' machines.json
 
-      - name: START (solo 17:00)
-        if: github.event.schedule == '0 21 * * *' || github.event.schedule == '0 20 * * *'
+      - name: START (según modo)
+        if: steps.mode.outputs.mode == 'start'
         run: |
           echo "▶️ START $TARGET_ID"
           curl -fsS -X POST -H "Authorization: Bearer $FLY_API_TOKEN" \
             "$FLY_API_HOSTNAME/v1/apps/$APP/machines/$TARGET_ID/start"
           curl -fsS "https://$APP.fly.dev/health" || true
 
-      - name: STOP (solo 20:00)
-        if: github.event.schedule == '0 0 * * *' || github.event.schedule == '0 23 * * *'
+      - name: STOP (según modo)
+        if: steps.mode.outputs.mode == 'stop'
         run: |
           echo "⏹ STOP $TARGET_ID"
           curl -fsS -X POST -H "Authorization: Bearer $FLY_API_TOKEN" \
