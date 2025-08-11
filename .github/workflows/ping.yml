@@ -1,0 +1,18 @@
+name: Mantener activa Fly (17:00–20:00 CL)
+
+on:
+  schedule:
+    - cron: "*/2 21-23 * * *"  # Invierno CL (UTC-4): 17–19 = 21–23 UTC
+    - cron: "*/2 20-22 * * *"  # Verano  CL (UTC-3): 17–19 = 20–22 UTC
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    env:
+      APP: crossfit-reservas-mvp
+    steps:
+      - name: Hacer ping a la app
+        run: |
+          echo "🌐 Ping https://$APP.fly.dev"
+          curl -fsS "https://$APP.fly.dev/health" || true
