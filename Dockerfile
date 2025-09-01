@@ -56,7 +56,6 @@ RUN pip show pytz
 
 # Instalar navegadores de Playwright (como root para permisos)
 RUN playwright install chromium
-RUN playwright install-deps chromium
 
 # Copiar código fuente
 COPY . .
